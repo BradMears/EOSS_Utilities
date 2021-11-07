@@ -20,8 +20,11 @@ def find_launch_time(df, alt_col):
     # How high is significant? There might be a clever way to determine that but for
     # now we'll use an arbitrary magic number.
     how_high_is_high = 50
-    idx = df.index[df[alt_col] > (avg_alt_on_ground + how_high_is_high)][0]
-    return idx
+    try:
+        idx = df.index[df[alt_col] > (avg_alt_on_ground + how_high_is_high)][0]
+        return idx
+    except:
+        return None
 
 #
 # main
@@ -43,25 +46,35 @@ if __name__ == '__main__':
             altitude_found = False
             for col in one_sec.columns:
                 if 'alt' in col.lower():  # This is probably an altitude column
-                    altitude_found = True
-                    launch_time = find_launch_time(one_sec, col)
-                    print(f'Max {col} = {one_sec[col].max()} at time {one_sec[col].idxmax()}', end='')
-                    print(f'\tLaunch happened at approximately {launch_time}')
+                    try:
+                        launch_time = find_launch_time(one_sec, col)
+                        max_alt = round(one_sec[col].max())
+                        ndx = one_sec[col].idxmax()
+                        print(f'Max {col} = {max_alt:,} at time {ndx}', end='')
+                        if launch_time:
+                            print(f'\tLaunch happened at approximately {launch_time}', end='')
+                        print()
+                        altitude_found = True
+                    except:
+                        pass
 
             # Process all the 'temperature' columns 
             temperature_found = False
             for col in one_sec.columns:
                 if 'temp' in col.lower():  # This is probably a temperature column
-                    temperature_found = True
-                    launch_temp = one_sec[col][launch_time]
-                    print(f'{col} at launch = {launch_temp}')
+                    try:
+                        launch_temp = round(one_sec[col][launch_time])
+                        print(f'{col} at launch = {launch_temp}')
+                        temperature_found = True
+                    except:
+                        pass
 
             # If we couldn't find a key value, then print out all the column names.
             #  Maybe there will be one that we can use. If so, a code change will
             # be needed.
             if not altitude_found or not temperature_found:
-                print("\nCouldn't find key data. Maybe one of these columns instead?")
-                print(one_sec.columns)
+                print("\t Couldn't find key data. Maybe one of these columns instead?")
+                print('\t', one_sec.columns)
                 print
 
             print()
